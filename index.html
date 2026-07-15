@@ -100,6 +100,11 @@ var isAndroid=/Android/i.test(ua);
 var isChrome=/Chrome/i.test(ua)&&!/Edg|OPR|Firefox/i.test(ua);
 var isBluefy=/Bluefy/i.test(ua);
 
+var isFirefox=/Firefox/i.test(ua);
+var isSafari=/Safari/i.test(ua)&&!/Chrome/i.test(ua);
+var isEdge=/Edg/i.test(ua);
+var isOpera=/OPR|Opera/i.test(ua);
+
 function platformKontrol(){
   if(isIOS){
     return "ios";
@@ -110,10 +115,30 @@ function platformKontrol(){
   if(isAndroid&&isChrome){
     return "ok";
   }
-  if(!isIOS&&!isAndroid){
-    return "ok";
+  if(isFirefox||isSafari||isEdge||isOpera){
+    return "tarayici";
   }
   return "ok";
+}
+
+function sayfaKontrol(){
+  var durum=platformKontrol();
+  if(durum=="ios"){
+    var bluefyMsg='<b>iPhone/iOS tespit edildi!</b><br><br>Web Bluetooth sadece <b>Bluefy</b> tarayicisi ile calisir.<br><br>App Store\'dan Bluefy yukleyerek sayfayi acmaniz gerekiyor.';
+    uyariGoster(bluefyMsg,'App Store\'a Git',function(){
+      window.open('https://apps.apple.com/app/bluefy-web-ble-browser/id1492822055','_blank');
+    });
+  }
+  else if(durum=="android-chrome"){
+    var chromeMsg='<b>Android tespit edildi!</b><br><br>Web Bluetooth icin <b>Chrome</b> tarayicisi gerekli.<br><br>1. Chrome\'u acin<br>2. Adres cubuguna <code style="background:#26262b;padding:4px 8px;border-radius:4px;font-size:13px">chrome://flags/#enable-web-bluetooth</code> yazin<br>3. <b>Web Bluetooth</b> -> <b>Enabled</b><br>4. Chrome\'u yeniden baslatin<br>5. Bu sayfayi tekrar acin';
+    uyariGoster(chromeMsg,'Tamam',function(){
+      navigator.clipboard.writeText('chrome://flags/#enable-web-bluetooth').catch(function(){});
+    });
+  }
+  else if(durum=="tarayici"){
+    var tarayiciMsg='<b>Chrome disinda bir tarayici kullaniliyor!</b><br><br>Web Bluetooth sadece <b>Google Chrome</b> tarayicisi ile calisir.<br><br>Chrome ile bu sayfayi acin.';
+    uyariGoster(tarayiciMsg,'Tamam',function(){});
+  }
 }
 
 function uyariGoster(msg,btnText,btnAction){
@@ -383,6 +408,7 @@ async function testCihaz(n){
     cihazGuncelle(cihazAktif);
   }
 }
+sayfaKontrol();
 </script>
 </body>
 </html>
