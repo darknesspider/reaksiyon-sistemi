@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Reaksiyon Sistemi</title>
+<style>
+  :root{--bg:#121214;--card:#1a1a1e;--primary:#00e676;--danger:#ff1744;--text:#fff;--sec:#a0a0a5}
+  *{-webkit-tap-highlight-color:transparent;box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);margin:0;padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom) 12px 12px;display:flex;flex-direction:column;align-items:center;-webkit-user-select:none;user-select:none;overflow-x:hidden}
+  .container{width:100%;max-width:500px}
+  h1{text-align:center;font-size:20px;margin:8px 0 4px;color:var(--primary)}
+  .status-bar{text-align:center;font-size:13px;color:var(--sec);margin-bottom:12px}
+  .card{background:var(--card);border-radius:12px;padding:14px;margin-bottom:12px}
+  .label{font-size:11px;color:var(--sec);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px}
+  button{width:100%;padding:16px;border:none;border-radius:10px;font-weight:bold;font-size:16px;cursor:pointer;transition:all .15s;margin-bottom:8px;touch-action:manipulation}
+  .btn-connect{background:#2979ff;color:#fff;font-size:17px}
+  .btn-connect.connected{background:var(--danger)}
+  .btn-start{background:var(--primary);color:#121214;font-size:18px;padding:18px}
+  .btn-start:disabled{background:#334038;color:#555;cursor:not-allowed}
+  .btn-clear{background:#c23616;color:#fff;font-size:13px;padding:12px}
+  .btn-undo{background:#555;color:#fff;font-size:13px;padding:12px}
+  .btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+  input[type="text"]{width:100%;padding:12px;background:#26262b;border:1px solid #3a3a42;border-radius:6px;color:#fff;font-size:16px;text-align:center;letter-spacing:2px}
+  .btn-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px}
+  .btn-cihaz{padding:16px 0;font-size:20px;margin-bottom:0;min-height:56px}
+  .b1{background:#e94560;color:#fff}.b2{background:#2979ff;color:#fff}.b3{background:#7c4dff;color:#fff}.b4{background:#ff9100;color:#fff}
+  .btn-cihaz.off{background:#2a2a2e;color:#555;pointer-events:none}
+  .cihaz-durum{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+  .cihaz-item{text-align:center;padding:8px 4px;border-radius:8px;background:#26262b;cursor:pointer}
+  .cihaz-item .isim{font-size:11px;color:var(--sec);margin-bottom:4px}
+  .cihaz-item .nokta{width:14px;height:14px;border-radius:50%;display:inline-block}
+  .nokta.on{background:var(--primary);box-shadow:0 0 8px var(--primary)}
+  .nokta.off{background:#555}
+  .sira-goster{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0}
+  .sira-chip{padding:4px 8px;border-radius:4px;font-size:12px;font-weight:bold}
+  .sc1{background:#e94560}.sc2{background:#2979ff}.sc3{background:#7c4dff}.sc4{background:#ff9100}
+  #terminal{background:#0b0b0c;border:1px solid #222;border-radius:8px;padding:12px;max-height:40vh;min-height:120px;overflow-y:auto;font-family:"Courier New",monospace;font-size:12px;white-space:pre-wrap;line-height:1.4;-webkit-overflow-scrolling:touch}
+  .ok{color:var(--primary)}.err{color:var(--danger)}.rpt{color:#ffab00;font-weight:bold}.sys{color:#2979ff}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>REAKSIYON SISTEMI</h1>
+  <div class="status-bar" id="status">Durum: Baglanti Yok</div>
+
+  <button id="connectBtn" class="btn-connect" onclick="baglanTikla()">Cihaz Baglan</button>
+
+  <div id="kontrolKart" class="card" style="display:none">
+    <span class="label">Cihaz Durumlari</span>
+    <div class="cihaz-durum">
+      <div class="cihaz-item" id="cihazItem1" onclick="testCihaz(1)"><div class="isim">Cihaz-1</div><span class="nokta on" id="nokta1"></span></div>
+      <div class="cihaz-item" id="cihazItem2" onclick="testCihaz(2)"><div class="isim">Cihaz-2</div><span class="nokta off" id="nokta2"></span></div>
+      <div class="cihaz-item" id="cihazItem3" onclick="testCihaz(3)"><div class="isim">Cihaz-3</div><span class="nokta off" id="nokta3"></span></div>
+      <div class="cihaz-item" id="cihazItem4" onclick="testCihaz(4)"><div class="isim">Cihaz-4</div><span class="nokta off" id="nokta4"></span></div>
+    </div>
+
+    <span class="label">Sonme Suresi: <span id="sureDeger">5</span> sn</span>
+    <input type="range" id="sureInput" value="5" min="3" max="10" style="width:100%;margin-bottom:10px;accent-color:var(--primary);height:36px">
+
+    <span class="label">Cihaz Sirasi</span>
+    <div class="btn-grid">
+      <button id="btn1" class="btn-cihaz b1" onclick="siraEkle(1)">1</button>
+      <button id="btn2" class="btn-cihaz b2 off" onclick="siraEkle(2)" disabled>2</button>
+      <button id="btn3" class="btn-cihaz b3 off" onclick="siraEkle(3)" disabled>3</button>
+      <button id="btn4" class="btn-cihaz b4 off" onclick="siraEkle(4)" disabled>4</button>
+    </div>
+    <input type="text" id="siraInput" readonly>
+    <div id="siraGoster" class="sira-goster"></div>
+    <div class="btn-row">
+      <button class="btn-undo" onclick="sonSil()">Son Sil</button>
+      <button class="btn-clear" onclick="siraTemizle()">Hepsini Temizle</button>
+    </div>
+  </div>
+
+  <button id="startBtn" class="btn btn-start" onclick="startGame()" disabled>OYUNU BASLAT</button>
+
+  <div class="card">
+    <span class="label">Terminal</span>
+    <div id="terminal">Sisteme baglanin...</div>
+  </div>
+</div>
+
+<script>
+var SERVICE_UUID="4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+var RX_UUID="6d6534e7-d172-4a66-b223-5b955f7d315b";
+var TX_UUID="a87e5b8d-69b0-4dbf-b513-fc482a514d45";
+
+var bleDevice=null, rxChar=null;
+var siradizisi=[];
+var oyunDevam=false;
+var testDevam=false;
+var cihazAktif=[true,false,false,false];
+
+var ua=navigator.userAgent;
+var isIOS=/iPhone|iPad|iPod/i.test(ua);
+var isAndroid=/Android/i.test(ua);
+var isChrome=/Chrome/i.test(ua)&&!/Edg|OPR|Firefox/i.test(ua);
+var isBluefy=/Bluefy/i.test(ua);
+
+function platformKontrol(){
+  if(isIOS){
+    return "ios";
+  }
+  if(isAndroid&&!isChrome){
+    return "android-chrome";
+  }
+  if(isAndroid&&isChrome){
+    return "ok";
+  }
+  if(!isIOS&&!isAndroid){
+    return "ok";
+  }
+  return "ok";
+}
+
+function uyariGoster(msg,btnText,btnAction){
+  var overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  var box=document.createElement('div');
+  box.style.cssText='background:#1a1a1e;border-radius:14px;padding:24px;max-width:360px;width:100%;text-align:center;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+  var p=document.createElement('p');
+  p.style.cssText='font-size:15px;line-height:1.5;margin:0 0 20px;color:#e0e0e0';
+  p.innerHTML=msg;
+  var btn=document.createElement('button');
+  btn.textContent=btnText;
+  btn.style.cssText='width:100%;padding:14px;border:none;border-radius:10px;font-weight:bold;font-size:16px;cursor:pointer;background:#2979ff;color:#fff';
+  btn.onclick=function(){btnAction();overlay.remove()};
+  var cancelBtn=document.createElement('button');
+  cancelBtn.textContent='Kapat';
+  cancelBtn.style.cssText='width:100%;padding:14px;border:none;border-radius:10px;font-size:14px;cursor:pointer;background:transparent;color:#a0a0a5;margin-top:8px';
+  cancelBtn.onclick=function(){overlay.remove()};
+  box.appendChild(p);
+  box.appendChild(btn);
+  box.appendChild(cancelBtn);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+}
+
+function baglanTikla(){
+  if(bleDevice&&bleDevice.gatt.connected){
+    bleDevice.gatt.disconnect();
+    return;
+  }
+  var durum=platformKontrol();
+  if(durum=="ios"){
+    var bluefyMsg='<b>iPhone/iOS tespit edildi!</b><br><br>Web Bluetooth sadece <b>Bluefy</b> tarayicisi ile calisir.<br><br>App Store\'dan Bluefy yukleyerek sayfayi acmaniz gerekiyor.';
+    uyariGoster(bluefyMsg,'App Store\'a Git',function(){
+      window.open('https://apps.apple.com/app/bluefy-web-ble-browser/id1492822055','_blank');
+    });
+    return;
+  }
+  if(durum=="android-chrome"){
+    var chromeMsg='<b>Android tespit edildi!</b><br><br>Web Bluetooth icin <b>Chrome</b> tarayicisi gerekli.<br><br>1. Chrome\'u acin<br>2. Adres cubuguna <code style="background:#26262b;padding:4px 8px;border-radius:4px;font-size:13px">chrome://flags/#enable-web-bluetooth</code> yazin<br>3. <b>Web Bluetooth</b> -> <b>Enabled</b><br>4. Chrome\'u yeniden baslatin<br>5. Bu sayfayi tekrar acin';
+    uyariGoster(chromeMsg,'Tamam',function(){
+      navigator.clipboard.writeText('chrome://flags/#enable-web-bluetooth').catch(function(){});
+    });
+    return;
+  }
+  if(isChrome && !navigator.bluetooth){
+    var bleMsg='<b>Web Bluetooth Kapali!</b><br><br>Chrome\'da Web Bluetooth\'u aktif etmeniz gerekiyor:<br><br>1. Adres cubuguna <code style="background:#26262b;padding:4px 8px;border-radius:4px;font-size:13px">chrome://flags/#enable-web-bluetooth</code> yazin<br>2. <b>Web Bluetooth</b> -> <b>Enabled</b><br>3. Chrome\'u yeniden baslatin<br>4. Bu sayfayi tekrar acin';
+    uyariGoster(bleMsg,'Tamam',function(){
+      navigator.clipboard.writeText('chrome://flags/#enable-web-bluetooth').catch(function(){});
+    });
+    return;
+  }
+  toggleConnection();
+}
+
+var terminal=document.getElementById('terminal');
+
+function log(msg,type){
+  var s=document.createElement('span');
+  if(type)s.className=type;
+  s.textContent=msg+'\n';
+  terminal.appendChild(s);
+  terminal.scrollTop=terminal.scrollHeight;
+}
+
+function cihazGuncelle(durumlar){
+  for(var i=0;i<4;i++){
+    var aktif=durumlar[i];
+    cihazAktif[i]=aktif;
+    var nokta=document.getElementById('nokta'+(i+1));
+    var btn=document.getElementById('btn'+(i+1));
+    var item=document.getElementById('cihazItem'+(i+1));
+    if(nokta){nokta.className='nokta '+(aktif?'on':'off');}
+    if(btn){
+      if(aktif){
+        btn.classList.remove('off');
+        btn.disabled=false;
+      } else {
+        btn.classList.add('off');
+        btn.disabled=true;
+      }
+    }
+    if(item){
+      if(oyunDevam||testDevam||!aktif){
+        item.style.opacity='0.3';
+        item.style.pointerEvents='none';
+      } else {
+        item.style.opacity='1';
+        item.style.pointerEvents='auto';
+      }
+    }
+  }
+}
+
+async function toggleConnection(){
+  if(bleDevice&&bleDevice.gatt.connected){
+    bleDevice.gatt.disconnect();
+    return;
+  }
+  try{
+    document.getElementById('status').innerText="Durum: Araniyor...";
+    bleDevice=await navigator.bluetooth.requestDevice({
+      filters:[{name:'Reaksiyon_Sistemi'}],
+      optionalServices:[SERVICE_UUID]
+    });
+    var server=await bleDevice.gatt.connect();
+    var service=await server.getPrimaryService(SERVICE_UUID);
+    rxChar=await service.getCharacteristic(RX_UUID);
+    var txChar=await service.getCharacteristic(TX_UUID);
+    await txChar.startNotifications();
+    txChar.addEventListener('characteristicvaluechanged',function(e){
+      var text=new TextDecoder('utf-8').decode(e.target.value);
+
+      if(text.indexOf("DURUM:")==0){
+        try{
+          var json=JSON.parse(text.substring(6));
+          if(json.cihazlar){
+            var d=json.cihazlar;
+            cihazGuncelle([true,d[0],d[1],d[2]]);
+          }
+        }catch(ex){}
+        return;
+      }
+
+      if(text.indexOf("Baglandi:")>=0){
+        var match=text.match(/Cihaz-(\d)/);
+        if(match){
+          var n=parseInt(match[1]);
+          cihazAktif[n-1]=true;
+          cihazGuncelle(cihazAktif);
+        }
+        log(text.trim(),"sys");
+        return;
+      }
+      if(text.indexOf("Koptu:")>=0){
+        var match=text.match(/Cihaz-(\d)/);
+        if(match){
+          var n=parseInt(match[1]);
+          cihazAktif[n-1]=false;
+          cihazGuncelle(cihazAktif);
+        }
+        log(text.trim(),"err");
+        return;
+      }
+
+      if(text.indexOf("TEST:")>=0){
+        testDevam=false;
+        cihazGuncelle(cihazAktif);
+        var isErr=text.indexOf("Sure bitti")>=0||text.indexOf("yanit vermedi")>=0;
+        log(text.trim(),isErr?"err":"ok");
+        return;
+      }
+
+      if(text.indexOf("OYUN BASLADI")>=0){
+        oyunDevam=true;
+        terminal.innerHTML='';
+        document.getElementById('startBtn').innerText='OYUNU BITIR';
+        document.getElementById('startBtn').disabled=false;
+        document.getElementById('startBtn').style.background='#ff1744';
+        cihazGuncelle(cihazAktif);
+        log("OYUN BASLADI","ok");
+      }
+      if(text.indexOf("OYUN SIFIRLANDI")>=0){
+        oyunDevam=false;
+        document.getElementById('startBtn').innerText='OYUNU BASLAT';
+        document.getElementById('startBtn').disabled=false;
+        document.getElementById('startBtn').style.background='#00e676';
+        cihazGuncelle(cihazAktif);
+        log("OYUN SIFIRLANDI","err");
+        return;
+      }
+      if(text.indexOf("Toplam Sure:")>=0){
+        oyunDevam=false;
+        document.getElementById('startBtn').innerText='OYUNU BASLAT';
+        document.getElementById('startBtn').disabled=false;
+        document.getElementById('startBtn').style.background='#00e676';
+        cihazGuncelle(cihazAktif);
+      }
+      if(text.indexOf("ADIM RAPORU")>=0||text.indexOf("CEZA RAPORU")>=0||text.indexOf("OZET")>=0){
+        log("\n"+text.trim(),"rpt");
+      } else if(text.indexOf("Toplam Ceza:")>=0||text.indexOf("Toplam Sure:")>=0||text.indexOf(". Gecis")>=0||text.indexOf(". Son Adim")>=0||text.indexOf("-> Adim")>=0){
+        log(text.trim(),"");
+      }
+    });
+    document.getElementById('status').innerText="Durum: BAGLANDI";
+    document.getElementById('connectBtn').innerText="BAGLANTIYI KES";
+    document.getElementById('connectBtn').className="btn-connect connected";
+    document.getElementById('startBtn').disabled=false;
+    document.getElementById('kontrolKart').style.display='block';
+    terminal.innerHTML="";
+    bleDevice.addEventListener('gattserverdisconnected',function(){
+      document.getElementById('status').innerText="Durum: Koptu";
+      document.getElementById('connectBtn').innerText="Cihaz Baglan";
+      document.getElementById('connectBtn').className="btn-connect";
+      document.getElementById('startBtn').disabled=true;
+      document.getElementById('kontrolKart').style.display='none';
+    });
+  }catch(e){
+    log("Hata: "+e.message,"err");
+    document.getElementById('status').innerText="Durum: Hata";
+  }
+}
+
+async function startGame(){
+  if(!rxChar)return;
+  if(oyunDevam){
+    try{
+      var enc=new TextEncoder();
+      await rxChar.writeValue(enc.encode("STOP\n"));
+    }catch(e){
+      log("Gonderim hatasi: "+e.message,"err");
+    }
+    return;
+  }
+  var sira=siradizisi.join(',');
+  if(!sira){alert("Once sirais olusturun!");return}
+  var sure=document.getElementById('sureInput').value;
+  try{
+    var enc=new TextEncoder();
+    await rxChar.writeValue(enc.encode("SURE:"+sure+"\n"));
+    await new Promise(function(r){setTimeout(r,200)});
+    await rxChar.writeValue(enc.encode(sira+"\n"));
+  }catch(e){
+    log("Gonderim hatasi: "+e.message,"err");
+  }
+}
+
+document.getElementById('sureInput').oninput=function(){document.getElementById('sureDeger').innerText=this.value};
+
+function siraEkle(n){
+  siradizisi.push(n);
+  document.getElementById('siraInput').value=siradizisi.join(',');
+  document.getElementById('siraGoster').innerHTML=siradizisi.map(function(m,i){
+    return '<span class="sira-chip sc'+m+'">'+(i+1)+':'+m+'</span>';
+  }).join('');
+}
+
+function siraTemizle(){
+  siradizisi=[];
+  document.getElementById('siraInput').value='';
+  document.getElementById('siraGoster').innerHTML='';
+}
+
+function sonSil(){
+  if(siradizisi.length===0)return;
+  siradizisi.pop();
+  document.getElementById('siraInput').value=siradizisi.join(',');
+  document.getElementById('siraGoster').innerHTML=siradizisi.map(function(m,i){
+    return '<span class="sira-chip sc'+m+'">'+(i+1)+':'+m+'</span>';
+  }).join('');
+}
+
+async function testCihaz(n){
+  if(!rxChar||oyunDevam||testDevam)return;
+  testDevam=true;
+  cihazGuncelle(cihazAktif);
+  try{
+    var enc=new TextEncoder();
+    var sure=document.getElementById('sureInput').value;
+    await rxChar.writeValue(enc.encode("SURE:"+sure+"\n"));
+    await new Promise(function(r){setTimeout(r,100)});
+    await rxChar.writeValue(enc.encode("TEST:"+n+"\n"));
+    log("Test: Cihaz-"+n+" ("+sure+" sn)","sys");
+  }catch(e){
+    log("Test hatasi: "+e.message,"err");
+    testDevam=false;
+    cihazGuncelle(cihazAktif);
+  }
+}
+</script>
+</body>
+</html>
